@@ -24,16 +24,18 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import Image from "next/image";
 
-const registerSchema = z.object({
-  email: z.email("Please enter a valid email address"),
-  password: z.string().min(1, "password is required"),
-  confirmPassword: z.string(),
-})
-.refine((data)=>data.password === data.confirmPassword,{
+const registerSchema = z
+  .object({
+    email: z.email("Please enter a valid email address"),
+    password: z.string().min(1, "password is required"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Password don’t match",
-    path:["confirmPassword"],
-})
+    path: ["confirmPassword"],
+  });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -45,27 +47,27 @@ export function RegisterForm() {
     defaultValues: {
       email: "",
       password: "",
-      confirmPassword:"",
+      confirmPassword: "",
     },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
-    await authClient.signUp.email({
+    await authClient.signUp.email(
+      {
         name: values.email,
-        email:values.email,
-        password:values.password,
+        email: values.email,
+        password: values.password,
         callbackURL: "/",
-    },
-    {
-        onSuccess : ()=>{
-            router.push("/");
+      },
+      {
+        onSuccess: () => {
+          router.push("/");
         },
-        onError: (ctx)=>{
-            toast.error(ctx.error.message);
-        }
-    }
-)
-  
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
+      }
+    );
   };
   const isPending = form.formState.isSubmitting;
 
@@ -73,7 +75,7 @@ export function RegisterForm() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle>GEt Started</CardTitle>
+          <CardTitle>Get Started</CardTitle>
           <CardDescription>Create your account to get started</CardDescription>
         </CardHeader>
         <CardContent>
@@ -84,18 +86,30 @@ export function RegisterForm() {
                 <div className="flex flex-col gap-4">
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     type="button"
                     disabled={isPending}
                   >
+                    <Image
+                      alt="GitHub"
+                      src="/logos/github.svg"
+                      width={20}
+                      height={20}
+                    />
                     Continue with GitHub
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     type="button"
                     disabled={isPending}
                   >
+                    <Image
+                      alt="Google"
+                      src="/logos/google.svg"
+                      width={20}
+                      height={20}
+                    />
                     Continue with Google
                   </Button>
                 </div>
@@ -162,7 +176,7 @@ export function RegisterForm() {
 
                 {/* Signup Link */}
                 <div className="text-center text-sm">
-                 Already have an account?{" "}
+                  Already have an account?{" "}
                   <Link href="/login" className="underline">
                     Login
                   </Link>
