@@ -1,26 +1,19 @@
-import { Client } from "@/client";
-import { getQueryClient, trpc } from "@/trpc/server";
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { requireAuth } from "@/lib/auth-utils";
+import { caller } from "@/trpc/server";
+import { LogoutButton } from "./logout";
 
-const page = async () => {
-  // const users =await prisma.user.findMany();  cheky ehy we use caller nre method use trcp
 
-  // const users = await caller.getUsers(); //this is by server component
+const page= async () => {
 
-  // const trpc =useTRPC();
-  // const {data : users} = useQuery(trpc.getUsers.queryOptions())  //this is by  client componet
+  await requireAuth();
 
-  const queryClient = getQueryClient();
-
-  void queryClient.prefetchQuery(trpc.getUsers.queryOptions());
-
+  const data = await caller.getUsers();
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<p>loading...</p>}>
-        <Client />
-      </Suspense>
-    </HydrationBoundary>
+    <div className="min-h-screen min-w-screen flex flex-col items-center justify-center gap-y-6">
+     Protected server component
+     {JSON.stringify(data,null,2)}
+     <LogoutButton/>
+    </div>
   );
 };
 
