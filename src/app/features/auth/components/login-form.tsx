@@ -24,6 +24,7 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import Image from "next/image";
 
 const loginSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -44,20 +45,21 @@ export function LoginForm() {
   });
 
   const onSubmit = async (values: LoginFromValues) => {
-    await authClient.signIn.email({
-      email: values.email,
-      password: values.password,
-      callbackURL:"/",
-    },{
-      onSuccess: ()=>{
-        router.push("/");
+    await authClient.signIn.email(
+      {
+        email: values.email,
+        password: values.password,
+        callbackURL: "/",
       },
-      onError: (ctx)=>{
-        toast.error(ctx.error.message);
+      {
+        onSuccess: () => {
+          router.push("/");
+        },
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
       }
-    }
-  )
-    
+    );
   };
   const isPending = form.formState.isSubmitting;
 
@@ -77,18 +79,30 @@ export function LoginForm() {
                 <div className="flex flex-col gap-4">
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     type="button"
                     disabled={isPending}
                   >
+                    <Image
+                      alt="GitHub"
+                      src="/logos/github.svg"
+                      width={20}
+                      height={20}
+                    />
                     Continue with GitHub
                   </Button>
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="w-full flex items-center justify-center gap-2"
                     type="button"
                     disabled={isPending}
                   >
+                    <Image
+                      alt="Google"
+                      src="/logos/google.svg"
+                      width={20}
+                      height={20}
+                    />
                     Continue with Google
                   </Button>
                 </div>
