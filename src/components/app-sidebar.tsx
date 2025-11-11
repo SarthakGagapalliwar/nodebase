@@ -24,7 +24,7 @@ import {
 } from "./ui/sidebar";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
-import { useHashActiveSubscription } from "@/app/features/subscriptions/hooks/use-subscriptions";
+import { useHasActiveSubscription } from "@/app/features/subscriptions/hooks/use-subscriptions";
 
 const menuItems = [
   {
@@ -52,7 +52,7 @@ const menuItems = [
 export const AppSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const {HashActiveSubscription, isLoading} = useHashActiveSubscription();
+  const { hasActiveSubscription, isLoading } = useHasActiveSubscription();
 
   return (
     <Sidebar collapsible="icon">
@@ -101,17 +101,17 @@ export const AppSidebar = () => {
         ))}
       </SidebarContent>
       <SidebarMenu>
-        {!HashActiveSubscription && ! !isLoading && (
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            tooltip="Upgrad to Pro"
-            className="gap-x-4 h-10 px-4"
-            onClick={() => authClient.checkout({slug:"pro"})}
-          >
-            <StarIcon className="h-4 w-4" />
-            <span>Upgrade to Pro</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {!hasActiveSubscription && !isLoading && (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Upgrad to Pro"
+              className="gap-x-4 h-10 px-4"
+              onClick={() => authClient.checkout({ slug: "pro" })}
+            >
+              <StarIcon className="h-4 w-4" />
+              <span>Upgrade to Pro</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         )}
         <SidebarMenuItem>
           <SidebarMenuButton
