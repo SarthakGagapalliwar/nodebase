@@ -12,15 +12,15 @@ export const useSubscritions = () =>{
     });
 };
 
-export const useHashActiveSubscription = ()=>{
+export const useHasActiveSubscription = ()=>{
     const {data: customerState, isLoading, ...rest}=useSubscritions();
 
 
-    const HashActiveSubscription = customerState?.activeSubscriptions && 
+    const hasActiveSubscription = customerState?.activeSubscriptions && 
     customerState.activeSubscriptions.length > 0;
 
     return{
-        HashActiveSubscription,
+        hasActiveSubscription,
         subscription:customerState?.activeSubscriptions?.[0],
         isLoading,
         ...rest,
