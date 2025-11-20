@@ -10,10 +10,12 @@ import {
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useWorkflowsParams } from "./use-workflows-params";
 
 export const useSuspenseWorkflows = () => {
   const trpc = useTRPC();
-  return useSuspenseQuery(trpc.Workflow.getMany.queryOptions());
+  const [params] = useWorkflowsParams();
+  return useSuspenseQuery(trpc.Workflow.getMany.queryOptions(params));
 };
 
 /*
@@ -30,7 +32,7 @@ export const useCreateWorkflow = () => {
       onSuccess: (data) => {
         toast.success(`Workflow "${data.name}" created`);
         router.push(`/workflows/${data.id}`);
-        queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions());
+        queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions({}));
       },
       onError: (error) => {
         toast.error(`Failed to create workflow: ${error.message}`);

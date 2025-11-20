@@ -24,7 +24,7 @@ import {
 } from "./ui/sidebar";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
-import { useHasActiveSubscription } from "@/app/features/subscriptions/hooks/use-subscriptions";
+import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscriptions";
 
 const menuItems = [
   {
