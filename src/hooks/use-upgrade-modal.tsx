@@ -18,4 +18,4 @@ export const useUpgradeModel = () =>{
     onOpenChange={setOpen}
     />
     return {handleError,modal};
-}
+} 
