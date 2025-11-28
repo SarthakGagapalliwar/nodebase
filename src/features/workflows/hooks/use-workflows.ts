@@ -45,21 +45,54 @@ export const useCreateWorkflow = () => {
  * Hook to remove a workflow
  */
 
-
-export const useRemoveWorkflow = () =>{
+export const useRemoveWorkflow = () => {
   const trpc = useTRPC();
-  const queryClient =useQueryClient();
+  const queryClient = useQueryClient();
 
   return useMutation(
     trpc.Workflow.remove.mutationOptions({
-      onSuccess: (data)=>{
+      onSuccess: (data) => {
         toast.success(`Workflow "${data.name}" remove`);
-        queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions
-          ({}));
-          queryClient.invalidateQueries(
-            trpc.Workflow.getOne.queryFilter({id: data.id}),
-          );
-      }
+        queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.Workflow.getOne.queryFilter({ id: data.id })
+        );
+      },
     })
-  )
-}
+  );
+};
+
+/**
+ * Hook to fetch a single workflw using susupnse
+ */
+
+export const useSuspenseWorkflow = (id: string) => {
+  const trpc = useTRPC();
+  return useSuspenseQuery(trpc.Workflow.getOne.queryOptions({ id }));
+};
+
+/*
+hook to a update workflow name
+*/
+
+export const useUpdateWorkflowName = () => {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const trpc = useTRPC();
+
+  return useMutation(
+    trpc.Workflow.updateName.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Workflow "${data.name}" updated`);
+        router.push(`/workflows/${data.id}`);
+        queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.Workflow.getOne.queryOptions({ id: data.id })
+        );
+      },
+      onError: (error) => {
+        toast.error(`Failed to update workflow: ${error.message}`);
+      },
+    })
+  );
+};
