@@ -1,75 +1,53 @@
-import prisma from "@/lib/db";
+
+import { NonRetriableError } from "inngest";
 import { inngest } from "./client";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createMistral } from "@ai-sdk/mistral";
-import * as Sentry from "@sentry/nextjs";
+import prisma from "@/lib/db";
+import { topologicalSort } from "./utils";
+import { NodeType } from "@prisma/client";
+import { getExector } from "@/features/execution/lib/executor-registry";
 
-const google = createGoogleGenerativeAI();
-const mistral = createMistral();
-const openai = createOpenAI();
-
-export const execute = inngest.createFunction(
-  { id: "execute-ai" },
-  { event: "execute/ai" },
+export const executeWorkflow = inngest.createFunction(
+  { id: "execute-workflow" },
+  { event: "workflow/execute.workflow" },
   async ({ event, step }) => {
-    await step.sleep("pretent", "5s");
 
-    
-Sentry.logger.info('User triggered test log', { log_source: 'sentry_test' })
-    console.warn("Something is missing");
-    console.error("this is an error i want to track");
-    
+    const workflowId = event.data.workflowId;
 
-    const { steps: geminiSteps } = await step.ai.wrap(
-      "gemini-generate-text",
-      generateText,
-      {
-        model: google("gemini-2.5-flash"),
-        system: "You are a helpful assistant",
-        prompt: "what is 2+2?",
-        experimental_telemetry: {
-          isEnabled: true,
-          recordInputs: true,
-          recordOutputs: true,
-        },
-      }
-    );
+    if(!workflowId){
+      throw new NonRetriableError("Workflow ID is missing");
+    }
 
-    const { steps: mistralSteps } = await step.ai.wrap(
-      "mistral-generate-text",
-      generateText,
-      {
-        model: mistral("codestral-latest"),
-        system: "You are a helpful assistant",
-        prompt: "what is 2+2?",
-        experimental_telemetry: {
-          isEnabled: true,
-          recordInputs: true,
-          recordOutputs: true,
-        },
-      }
-    );
-    const { steps: openaiSteps } = await step.ai.wrap(
-      "openai-generate-text",
-      generateText,
-      {
-        model: openai("gpt-4o-mini"),
-        system: "You are a helpful assistant",
-        prompt: "what is 2+2?",
-        experimental_telemetry: {
-          isEnabled: true,
-          recordInputs: true,
-          recordOutputs: true,
-        },
-      }
-    );
+
+    const sortedNodes =  await step.run("prepare-workflow", async()=>{
+      const workflow = await prisma.workflow.findUniqueOrThrow({
+        where: {id: workflowId},
+        include:{
+          nodes: true,
+          connections: true,
+        }
+      });
+
+      return topologicalSort(workflow.nodes, workflow.connections);
+    });
+
+    //Initialize  context with any initial data from the trigger
+    let context = event.data.initialData || {};
+
+    //Execute each node
+    for(const node of sortedNodes){
+      const  executor = getExector(node.type as NodeType);
+      context = await executor({
+        data: node.data as Record<string, unknown>,
+        nodeId: node.id,
+        context,
+        step,
+      });
+      
+    }
 
     return {
-      geminiSteps,
-      openaiSteps,
-      mistralSteps,
+      workflowId,
+      result: context,
     };
   }
 );
