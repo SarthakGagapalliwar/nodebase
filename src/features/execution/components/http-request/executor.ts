@@ -3,6 +3,7 @@ import { NonRetriableError } from "inngest";
 import ky, { type Options as KyOptions } from "ky";
 
 type HttpRequestData = {
+  variableName?: string;
   endpoint?: string;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: string;
@@ -20,6 +21,10 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
     //Todo Publish "error" state for http request
     throw new NonRetriableError("HTTP Request node: No endpoint");
   }
+  if (!data.variableName) {
+    //Todo Publish "error" state for http request
+    throw new NonRetriableError("Variable Name not configured");
+  }
 
   const result = await step.run("http-request", async () => {
     const endpoint = data.endpoint!;
@@ -29,6 +34,9 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
 
     if (["POST", "PUT", "PATCH"].includes(method) && data.body) {
       options.body = data.body;
+      options.headers={
+        "Content-Type":"application/json"
+      };
     }
 
     const response = await ky(endpoint, options);
@@ -37,14 +45,28 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
       ? await response.json()
       : await response.text();
 
-    return {
-      ...context,
-      httpResponse: {
+      const responcePayload = {
+        httpResponse: {
         status: response.status,
         statusText: response.statusText,
         data: responseData,
       },
+      }
+
+    if(data.variableName){
+        return {
+          ...context,
+          [data.variableName]: responcePayload,
+        };
+    }
+
+    //Fallback to direct httpResponce for backword compatibility
+
+    return{
+        ...context,
+        ...responcePayload,
     };
+
   });
 
   //Todo: Publish "success" state for hhtp request
