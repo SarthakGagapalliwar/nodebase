@@ -2,6 +2,7 @@ import Handlebars from "handlebars";
 import type { NodeExecutor } from "@/features/execution/types";
 import { NonRetriableError } from "inngest";
 import ky, { type Options as KyOptions } from "ky";
+import { httpRequestChannel } from "@/inngest/channels/http-request";
 
 Handlebars.registerHelper("json", (context) => {
     const jsonString = JSON.stringify(context,null,2);
@@ -22,23 +23,46 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
   nodeId,
   context,
   step,
+  publish,
 }) => {
-  //Todo :pubish  "loading" state for hhtp request ;
+  await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "loading",
+    }),
+  );
 
   if (!data.endpoint) {
-    //Todo Publish "error" state for http request
+    await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "error",
+    }),
+  );
     throw new NonRetriableError("HTTP Request node: No endpoint");
   }
   if (!data.variableName) {
-    //Todo Publish "error" state for http request
+    await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "error",
+    }),
+  );
     throw new NonRetriableError(
       "HTTP Request node: Variable Name not configured"
     );
   }
   if (!data.method) {
-    //Todo Publish "error" state for http request
+    await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "error",
+    }),
+  );
     throw new NonRetriableError("HTTP Request node: Method not configured");
   }
+
+  try{
 
   const result = await step.run("http-request", async () => {
     // http://{{todo.httpResponse.data.userld}}
@@ -76,7 +100,21 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
     };
   });
 
-  //Todo: Publish "success" state for hhtp request
+ await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "success",
+    }),
+  );
 
   return result;
+}catch(error){
+  await publish(
+    httpRequestChannel().status({
+      nodeId,
+      status: "error",
+    }),
+  );
+  throw error;
+}
 };
