@@ -5,16 +5,16 @@ import ky, { type Options as KyOptions } from "ky";
 import { httpRequestChannel } from "@/inngest/channels/http-request";
 
 Handlebars.registerHelper("json", (context) => {
-    const jsonString = JSON.stringify(context,null,2);
-    const SafeString= new Handlebars.SafeString(jsonString);
+  const jsonString = JSON.stringify(context, null, 2);
+  const SafeString = new Handlebars.SafeString(jsonString);
 
-    return SafeString;
+  return SafeString;
 });
 
 type HttpRequestData = {
-  variableName: string;
-  endpoint: string;
-  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  variableName?: string;
+  endpoint?: string;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: string;
 };
 
@@ -29,92 +29,90 @@ export const httpReqestExecutor: NodeExecutor<HttpRequestData> = async ({
     httpRequestChannel().status({
       nodeId,
       status: "loading",
-    }),
+    })
   );
 
-  if (!data.endpoint) {
-    await publish(
-    httpRequestChannel().status({
-      nodeId,
-      status: "error",
-    }),
-  );
-    throw new NonRetriableError("HTTP Request node: No endpoint");
-  }
-  if (!data.variableName) {
-    await publish(
-    httpRequestChannel().status({
-      nodeId,
-      status: "error",
-    }),
-  );
-    throw new NonRetriableError(
-      "HTTP Request node: Variable Name not configured"
-    );
-  }
-  if (!data.method) {
-    await publish(
-    httpRequestChannel().status({
-      nodeId,
-      status: "error",
-    }),
-  );
-    throw new NonRetriableError("HTTP Request node: Method not configured");
-  }
+  try {
+    const result = await step.run("http-request", async () => {
+      if (!data.endpoint) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError("HTTP Request node: No endpoint");
+      }
+      if (!data.variableName) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError(
+          "HTTP Request node: Variable Name not configured"
+        );
+      }
+      if (!data.method) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError("HTTP Request node: Method not configured");
+      }
+      // http://{{todo.httpResponse.data.userld}}
+      const endpoint = Handlebars.compile(data.endpoint)(context);
+      const method = data.method;
 
-  try{
+      const options: KyOptions = { method };
 
-  const result = await step.run("http-request", async () => {
-    // http://{{todo.httpResponse.data.userld}}
-    const endpoint = Handlebars.compile(data.endpoint)(context);
-    const method = data.method;
+      if (["POST", "PUT", "PATCH"].includes(method) && data.body) {
+        const resolved = Handlebars.compile(data.body || {})(context);
+        JSON.parse(resolved);
+        options.body = resolved;
+        options.headers = {
+          "Content-Type": "application/json",
+        };
+      }
 
-    const options: KyOptions = { method };
+      const response = await ky(endpoint, options);
+      const contentType = response.headers.get("content-type");
+      const responseData = contentType?.includes("application/json")
+        ? await response.json()
+        : await response.text();
 
-    if (["POST", "PUT", "PATCH"].includes(method) && data.body) {
-      const resolved = Handlebars.compile(data.body || {})(context);
-      JSON.parse(resolved);
-      options.body = resolved;
-      options.headers = {
-        "Content-Type": "application/json",
+      const responcePayload = {
+        httpResponse: {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData,
+        },
       };
-    }
 
-    const response = await ky(endpoint, options);
-    const contentType = response.headers.get("content-type");
-    const responseData = contentType?.includes("application/json")
-      ? await response.json()
-      : await response.text();
+      return {
+        ...context,
+        [data.variableName]: responcePayload,
+      };
+    });
 
-    const responcePayload = {
-      httpResponse: {
-        status: response.status,
-        statusText: response.statusText,
-        data: responseData,
-      },
-    };
+    await publish(
+      httpRequestChannel().status({
+        nodeId,
+        status: "success",
+      })
+    );
 
-    return {
-      ...context,
-      [data.variableName]: responcePayload,
-    };
-  });
-
- await publish(
-    httpRequestChannel().status({
-      nodeId,
-      status: "success",
-    }),
-  );
-
-  return result;
-}catch(error){
-  await publish(
-    httpRequestChannel().status({
-      nodeId,
-      status: "error",
-    }),
-  );
-  throw error;
-}
+    return result;
+  } catch (error) {
+    await publish(
+      httpRequestChannel().status({
+        nodeId,
+        status: "error",
+      })
+    );
+    throw error;
+  }
 };
