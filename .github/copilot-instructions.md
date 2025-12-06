@@ -4,6 +4,12 @@
 
 Nodebase is a **workflow automation builder** built with Next.js 15 (App Router + Turbopack). Users create visual workflows using a node-based editor (React Flow), with background job execution via Inngest and AI integrations (Google, OpenAI, Mistral).
 
+## CRITICAL RULES
+
+1. _Adaptive refactoring_: When modifying code, if you stumble upon sloppy code even if it's not directly related, refactor that code to improve clarity and maintainability.
+2. _Adaptive knowledge_: When working on a feature, familiarize yourself with all related files (e.g. DB schema, oRPC router, events, client code) to ensure holistic understanding and improvements and at the end update this doc with any new insights.
+3. _Thorough implementation_: When making changes to a feature, ensure all related aspects (DB schema, oRPC procedures, frontend code, events) are updated accordingly to maintain consistency and functionality.
+
 ## Architecture
 
 ### Tech Stack
@@ -108,3 +114,9 @@ npx prisma generate
 - `src/inngest/functions.ts` - Background job definitions
 - `src/lib/auth.ts` - better-auth configuration with Polar
 - `components.json` - shadcn/ui configuration
+
+## New Insights
+
+- Anthropic execution node added (`NodeType.ANTHROPIC`), registered in `node-components` and exposed in the node selector with `/logos/anthropic.svg`.
+- Anthropic realtime channel lives at `src/inngest/channels/anthropic.ts` (`anthropic-execution` topic `status`), included in `inngest/functions.ts` channels.
+- Anthropic executor uses `@ai-sdk/anthropic` with model `claude-3-5-sonnet-latest`; requires `ANTHROPIC_API_KEY` to run and publishes status updates via the anthropic channel.
