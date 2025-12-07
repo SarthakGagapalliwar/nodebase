@@ -3,27 +3,25 @@
 import { Node, NodeProps, useReactFlow } from "@xyflow/react";
 import { memo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { OpenAiDialog, OpenaiFormValues } from "./dialog";
+import { AutonomeDialog, AutonomeFormValues } from "./dialog";
 import { UseNodeStatus } from "../../hooks/use-node-status";
-import { OPENAI_CHANNEL_NAME } from "@/inngest/channels/openai";
-import { fetchOpenAiRealtimeToken } from "./action";
+import { AUTONOME_CHANNEL_NAME } from "@/inngest/channels/autonome";
+import { fetchAutonomeRealtimeToken } from "./action";
 
-type OpenAiNodeData = {
+type AutonomeNodeData = {
   variableName?: string;
-  credentialId?: string;
-  model?: string;
   systemPrompt?: string;
   userPrompt?: string;
 };
 
-type OpenAiNodeType = Node<OpenAiNodeData>;
+type AutonomeNodeType = Node<AutonomeNodeData>;
 
-export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
+export const AutonomeNode = memo((props: NodeProps<AutonomeNodeType>) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { setNodes } = useReactFlow();
 
-  const handleSubmit = (values: OpenaiFormValues) => {
+  const handleSubmit = (values: AutonomeFormValues) => {
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id === props.id) {
@@ -42,9 +40,9 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
 
   const nodeStatus = UseNodeStatus({
     nodeId: props.id,
-    channel: OPENAI_CHANNEL_NAME,
+    channel: AUTONOME_CHANNEL_NAME,
     topic: "status",
-    refreshToken: fetchOpenAiRealtimeToken,
+    refreshToken: fetchAutonomeRealtimeToken,
   });
 
   const handleOpenSetting = () => setDialogOpen(true);
@@ -58,7 +56,7 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
 
   return (
     <>
-      <OpenAiDialog
+      <AutonomeDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
@@ -67,8 +65,8 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
       <BaseExecutionNode
         {...props}
         id={props.id}
-        icon="/logos/openai.svg"
-        name="OpenAI"
+        icon="/logos/autonome.png"
+        name="Autonome"
         status={nodeStatus}
         description={description}
         onSettings={handleOpenSetting}
@@ -78,4 +76,4 @@ export const OpenAiNode = memo((props: NodeProps<OpenAiNodeType>) => {
   );
 });
 
-OpenAiNode.displayName = "OpenAiNode";
+AutonomeNode.displayName = "AutonomeNode";

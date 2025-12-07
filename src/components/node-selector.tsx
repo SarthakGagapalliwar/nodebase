@@ -54,6 +54,12 @@ const executionNodes: NodeTypeOption[] = [
     icon: GlobeIcon,
   },
   {
+    type: NodeType.AUTONOME,
+    label: "Autonome (Free)",
+    description: "Uses Autonome AI to generate text",
+    icon: "/logos/autonome.png",
+  },
+  {
     type: NodeType.ANTHROPIC,
     label: "Anthropic",
     description: "Uses Claude to generate text",
