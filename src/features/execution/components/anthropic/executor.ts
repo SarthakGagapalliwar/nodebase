@@ -2,10 +2,11 @@ import Handlebars from "handlebars";
 import type { NodeExecutor } from "@/features/execution/types";
 import { NonRetriableError } from "inngest";
 import { generateText } from "ai";
-// import { createAnthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { anthropicChannel } from "@/inngest/channels/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { FREE_CREDENTIAL_ID } from "@/config/ai-models";
+import prisma from "@/lib/db";
 
 Handlebars.registerHelper("json", (context) => {
   const jsonString = JSON.stringify(context, null, 2);
@@ -15,6 +16,8 @@ Handlebars.registerHelper("json", (context) => {
 
 type AnthropicData = {
   variableName?: string;
+  credentialId?: string;
+  model?: string;
   systemPrompt?: string;
   userPrompt?: string;
 };
@@ -43,6 +46,16 @@ export const anthropicExecutor: NodeExecutor<AnthropicData> = async ({
     throw new NonRetriableError("Anthropic node: variable name is missing");
   }
 
+  if (!data.credentialId) {
+    await publish(
+      anthropicChannel().status({
+        nodeId,
+        status: "error",
+      })
+    );
+    throw new NonRetriableError("Anthropic node: credential is missing");
+  }
+
   if (!data.userPrompt) {
     await publish(
       anthropicChannel().status({
@@ -59,32 +72,56 @@ export const anthropicExecutor: NodeExecutor<AnthropicData> = async ({
 
   const userPrompt = Handlebars.compile(data.userPrompt)(context);
 
-  const credentialValue = process.env.ANTHROPIC_API_KEY;
-
-  if (!credentialValue) {
-    await publish(
-      anthropicChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("Anthropic node: missing ANTHROPIC_API_KEY");
-  }
-
-  //   const anthropic = createAnthropic({
-  //     apiKey: credentialValue,
-  //   });
-  const nim = createOpenAICompatible({
-    name: "nim",
-    baseURL: "https://integrate.api.nvidia.com/v1",
-    headers: {
-      Authorization: `Bearer ${process.env.NIM_API_KEY}`,
-    },
-  });
+  const isFreeTier = data.credentialId === FREE_CREDENTIAL_ID;
 
   try {
+    let model;
+
+    if (isFreeTier) {
+      // Use NIM for free tier
+      const nimApiKey = process.env.NIM_API_KEY;
+      if (!nimApiKey) {
+        await publish(
+          anthropicChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError(
+          "Anthropic node: missing NIM_API_KEY for free tier"
+        );
+      }
+
+      const nim = createOpenAICompatible({
+        name: "nim",
+        baseURL: "https://integrate.api.nvidia.com/v1",
+        headers: {
+          Authorization: `Bearer ${nimApiKey}`,
+        },
+      });
+
+      model = nim.chatModel('moonshotai/kimi-k2-instruct-0905');
+    } else {
+      // Fetch user's credential and use Anthropic
+      const credential = await step.run("get-credential", () => {
+        return prisma.credential.findUniqueOrThrow({
+          where: { id: data.credentialId },
+        });
+      });
+
+      if (!credential) {
+        throw new NonRetriableError("Anthropic node: credential not found");
+      }
+
+      const anthropic = createAnthropic({
+        apiKey: credential.value,
+      });
+
+      model = anthropic(data.model || "claude-3-5-sonnet-latest");
+    }
+
     const result = await step.ai.wrap("anthropic-generate-text", generateText, {
-      model: nim.chatModel("deepseek-ai/deepseek-v3.1-terminus"),
+      model,
       system: systemPrompt,
       prompt: userPrompt,
       experimental_telemetry: {

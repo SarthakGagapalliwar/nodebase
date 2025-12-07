@@ -3,15 +3,17 @@
 import { Node, NodeProps, useReactFlow } from "@xyflow/react";
 import { memo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { GeminiDialog,GeminiFormValues  } from "./dialog";
+import { GeminiDialog, GeminiFormValues } from "./dialog";
 import { UseNodeStatus } from "../../hooks/use-node-status";
 import { GEMNI_CHANNEL_NAME } from "@/inngest/channels/gemini";
 import { geminiRealtimeToekn } from "./action";
 
 type GeminiNodeData = {
-  varibleName?: string;
+  variableName?: string;
+  credentialId?: string;
+  model?: string;
   systemPrompt?: string;
-  userPrompt?:string;
+  userPrompt?: string;
 };
 
 type GeminiNodeType = Node<GeminiNodeData>;
@@ -29,7 +31,7 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
             ...node,
             data: {
               ...node.data,
-              ...values
+              ...values,
             },
           };
         }
@@ -39,9 +41,9 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
   };
 
   const nodeStatus = UseNodeStatus({
-    nodeId:props.id,
+    nodeId: props.id,
     channel: GEMNI_CHANNEL_NAME,
-    topic :"status",
+    topic: "status",
     refreshToken: geminiRealtimeToekn,
   });
 
@@ -49,7 +51,7 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
 
   const nodeData = props.data;
   const description = nodeData?.userPrompt
-    ? `Prompt: ${nodeData.userPrompt.slice(0,50)}...`
+    ? `Prompt: ${nodeData.userPrompt.slice(0, 50)}...`
     : "Not configured";
 
   return (

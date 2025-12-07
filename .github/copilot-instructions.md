@@ -120,3 +120,8 @@ npx prisma generate
 - Anthropic execution node added (`NodeType.ANTHROPIC`), registered in `node-components` and exposed in the node selector with `/logos/anthropic.svg`.
 - Anthropic realtime channel lives at `src/inngest/channels/anthropic.ts` (`anthropic-execution` topic `status`), included in `inngest/functions.ts` channels.
 - Anthropic executor uses `@ai-sdk/anthropic` with model `claude-3-5-sonnet-latest`; requires `ANTHROPIC_API_KEY` to run and publishes status updates via the anthropic channel.
+- Autonome execution node added (`NodeType.AUTONOME`), registered in `node-components` with `/logos/autonome.png`. Uses NIM-powered DeepSeek model by default (no credential required).
+- AI model configuration stored in `src/config/ai-models.ts` with model options for Anthropic, Gemini, and OpenAI.
+- Free trial feature: determined via Polar customer state trial end; users can select "Free Trial" in credential dropdown which uses NIM backend (`FREE_CREDENTIAL_ID = "__FREE_TRIAL__"`).
+- All AI executors (Anthropic, Gemini, OpenAI) now support both free tier (NIM) and user credentials with model selection.
+- Trial check endpoint: `credentials.checkFreeTrial` returns `{ isInTrial, daysRemaining, trialEndDate }` based on Polar trial end.

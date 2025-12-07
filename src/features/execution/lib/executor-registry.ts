@@ -7,6 +7,7 @@ import { StripeTriggerExecutor } from "@/features/triggers/components/stripe-tri
 import { geminiExecutor } from "../components/gemini/executor";
 import { OpenAiExecutor } from "@/features/execution/components/openai/executor";
 import { anthropicExecutor } from "@/features/execution/components/anthropic/executor";
+import { autonomeExecutor } from "@/features/execution/components/autonome/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
   [NodeType.INITIAL]: manualTriggerExecutor,
@@ -18,6 +19,7 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
   [NodeType.ANTHROPIC]: anthropicExecutor,
   [NodeType.OPENAI]: OpenAiExecutor,
   [NodeType.NIM]: geminiExecutor, //TODO fix
+  [NodeType.AUTONOME]: autonomeExecutor,
 };
 
 export const getExector = (type: NodeType): NodeExecutor => {
