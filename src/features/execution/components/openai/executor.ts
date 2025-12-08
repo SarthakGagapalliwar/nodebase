@@ -7,6 +7,7 @@ import { openAiChannel } from "@/inngest/channels/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { FREE_CREDENTIAL_ID } from "@/config/ai-models";
 import prisma from "@/lib/db";
+import { decrypy } from "@/lib/encryption";
 
 Handlebars.registerHelper("json", (context) => {
   const jsonString = JSON.stringify(context, null, 2);
@@ -115,7 +116,7 @@ export const OpenAiExecutor: NodeExecutor<OpenAiData> = async ({
       }
 
       const openai = createOpenAI({
-        apiKey: credential.value,
+        apiKey: decrypy(credential.value),
       });
 
       model = openai(data.model || "gpt-4o");
