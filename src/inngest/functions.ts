@@ -12,6 +12,9 @@ import { geminiChannel } from "./channels/gemini";
 import { openAiChannel } from "./channels/openai";
 import { anthropicChannel } from "./channels/anthropic";
 import { autonomeChannel } from "./channels/autonome";
+import { whatsappChannel } from "./channels/whatsapp";
+import { discordChannel } from "./channels/discord";
+import { slackChannel } from "./channels/slack";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -29,6 +32,9 @@ export const executeWorkflow = inngest.createFunction(
       anthropicChannel(),
       openAiChannel(),
       autonomeChannel(),
+      whatsappChannel(),
+      discordChannel(),
+      slackChannel(),
     ],
   },
   async ({ event, step, publish }) => {
@@ -38,17 +44,28 @@ export const executeWorkflow = inngest.createFunction(
       throw new NonRetriableError("Workflow ID is missing");
     }
 
-    const sortedNodes = await step.run("prepare-workflow", async () => {
-      const workflow = await prisma.workflow.findUniqueOrThrow({
-        where: { id: workflowId },
-        include: {
-          nodes: true,
-          connections: true,
-        },
-      });
+    const { sortedNodes, userId } = await step.run(
+      "prepare-workflow",
+      async () => {
+        const workflow = await prisma.workflow.findUniqueOrThrow({
+          where: { id: workflowId },
+          select: {
+            nodes: true,
+            connections: true,
+            userId: true,
+          },
+        });
 
-      return topologicalSort(workflow.nodes, workflow.connections);
-    });
+        if (!workflow.userId) {
+          throw new NonRetriableError("Workflow is missing userId");
+        }
+
+        return {
+          sortedNodes: topologicalSort(workflow.nodes, workflow.connections),
+          userId: workflow.userId,
+        };
+      }
+    );
 
     //Initialize  context with any initial data from the trigger
     let context = event.data.initialData || {};
@@ -59,6 +76,7 @@ export const executeWorkflow = inngest.createFunction(
       context = await executor({
         data: node.data as Record<string, unknown>,
         nodeId: node.id,
+        userId,
         context,
         step,
         publish,

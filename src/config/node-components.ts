@@ -9,6 +9,9 @@ import { ManualTriggerNode } from "@/features/triggers/components/manual-trigger
 import { StripeTriggerNode } from "@/features/triggers/components/stripe-trigger/node";
 import { NodeType } from "@prisma/client";
 import type { NodeTypes } from "@xyflow/react";
+import { DiscordNode } from "@/features/execution/components/discord/node";
+import { SlackNode } from "@/features/execution/components/slack/node";
+import { WhatsAppNode } from "@/features/execution/components/whatsapp/node";
 
 export const nodeComponents = {
   [NodeType.INITIAL]: InitialNode,
@@ -20,6 +23,9 @@ export const nodeComponents = {
   [NodeType.GEMINI]: GeminiNode,
   [NodeType.OPENAI]: OpenAiNode,
   [NodeType.AUTONOME]: AutonomeNode,
+  [NodeType.DISCORD]: DiscordNode,
+  [NodeType.SLACK]: SlackNode,
+  [NodeType.WHATSAPP]: WhatsAppNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;
