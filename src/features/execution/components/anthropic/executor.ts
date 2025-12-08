@@ -7,6 +7,7 @@ import { anthropicChannel } from "@/inngest/channels/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { FREE_CREDENTIAL_ID } from "@/config/ai-models";
 import prisma from "@/lib/db";
+import { decrypy } from "@/lib/encryption";
 
 Handlebars.registerHelper("json", (context) => {
   const jsonString = JSON.stringify(context, null, 2);
@@ -115,7 +116,7 @@ export const anthropicExecutor: NodeExecutor<AnthropicData> = async ({
       }
 
       const anthropic = createAnthropic({
-        apiKey: credential.value,
+        apiKey: decrypy(credential.value),
       });
 
       model = anthropic(data.model || "claude-3-5-sonnet-latest");
