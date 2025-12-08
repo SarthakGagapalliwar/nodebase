@@ -8,8 +8,11 @@ import { geminiExecutor } from "../components/gemini/executor";
 import { OpenAiExecutor } from "@/features/execution/components/openai/executor";
 import { anthropicExecutor } from "@/features/execution/components/anthropic/executor";
 import { autonomeExecutor } from "@/features/execution/components/autonome/executor";
+import { discordExecutor } from "../components/discord/executor";
+import { slackExecutor } from "../components/slack/executor";
+import { whatsappExecutor } from "../components/whatsapp/executor";
 
-export const executorRegistry: Record<NodeType, NodeExecutor> = {
+export const executorRegistry: Record<NodeType, NodeExecutor> =  {
   [NodeType.INITIAL]: manualTriggerExecutor,
   [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
   [NodeType.HTTP_REQUEST]: httpReqestExecutor,
@@ -18,9 +21,12 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
   [NodeType.GEMINI]: geminiExecutor,
   [NodeType.ANTHROPIC]: anthropicExecutor,
   [NodeType.OPENAI]: OpenAiExecutor,
-  [NodeType.NIM]: geminiExecutor, //TODO fix
+  [NodeType.NIM]: geminiExecutor,
   [NodeType.AUTONOME]: autonomeExecutor,
-};
+  [NodeType.DISCORD]: discordExecutor,
+  [NodeType.SLACK]: slackExecutor,
+  [NodeType.WHATSAPP]: whatsappExecutor,
+} 
 
 export const getExector = (type: NodeType): NodeExecutor => {
   const execute = executorRegistry[type];

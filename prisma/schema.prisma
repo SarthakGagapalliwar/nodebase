@@ -111,6 +111,9 @@ enum NodeType {
   OPENAI
   NIM
   AUTONOME
+  DISCORD
+  SLACK
+  WHATSAPP
 }
 
 model Node {

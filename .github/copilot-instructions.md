@@ -125,3 +125,4 @@ npx prisma generate
 - Free trial feature: determined via Polar customer state trial end; users can select "Free Trial" in credential dropdown which uses NIM backend (`FREE_CREDENTIAL_ID = "__FREE_TRIAL__"`).
 - All AI executors (Anthropic, Gemini, OpenAI) now support both free tier (NIM) and user credentials with model selection.
 - Trial check endpoint: `credentials.checkFreeTrial` returns `{ isInTrial, daysRemaining, trialEndDate }` based on Polar trial end.
+- Messaging execution nodes now include Discord (`NodeType.DISCORD`), Slack (`NodeType.SLACK`), and WhatsApp (`NodeType.WHATSAPP`). Each has a matching channel in `src/inngest/channels/*`, a dialog/executor/node trio under `features/execution/components`, and is registered in both the node selector and executor registry.
