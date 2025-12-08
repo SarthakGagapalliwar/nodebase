@@ -126,3 +126,4 @@ npx prisma generate
 - All AI executors (Anthropic, Gemini, OpenAI) now support both free tier (NIM) and user credentials with model selection.
 - Trial check endpoint: `credentials.checkFreeTrial` returns `{ isInTrial, daysRemaining, trialEndDate }` based on Polar trial end.
 - Messaging execution nodes now include Discord (`NodeType.DISCORD`), Slack (`NodeType.SLACK`), and WhatsApp (`NodeType.WHATSAPP`). Each has a matching channel in `src/inngest/channels/*`, a dialog/executor/node trio under `features/execution/components`, and is registered in both the node selector and executor registry.
+- Execution tracking uses `Execution.inngestEventId` to correlate Inngest events. Executions are created in `inngest/functions.ts` when a workflow starts and marked `SUCCESS` with the final context payload after nodes finish.
