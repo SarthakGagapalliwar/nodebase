@@ -111,6 +111,7 @@ enum NodeType {
   GEMINI
   OPENAI
   NIM
+  NIM_IMAGE
   AUTONOME
   DISCORD
   SLACK

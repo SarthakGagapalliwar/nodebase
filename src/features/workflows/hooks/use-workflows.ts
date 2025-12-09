@@ -102,14 +102,12 @@ hook to a update workflow
 */
 
 export const useUpdateWorkflow = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
 
   return useMutation(
     trpc.Workflow.update.mutationOptions({
       onSuccess: (data) => {
-        toast.success(`Workflow "${data.name}" saved`);
         queryClient.invalidateQueries(trpc.Workflow.getMany.queryOptions({}));
         queryClient.invalidateQueries(
           trpc.Workflow.getOne.queryOptions({ id: data.id })
@@ -121,7 +119,6 @@ export const useUpdateWorkflow = () => {
     })
   );
 };
-
 
 /*
 hook to a execute a workflow 

@@ -87,7 +87,7 @@ export const autonomeExecutor: NodeExecutor<AutonomeData> = async ({
       "autonome-generate-text",
       generateText,
       {
-        model: openrouter.chat("kwaipilot/kat-coder-pro:free"),
+        model: nim.chatModel("moonshotai/kimi-k2-thinking"),
         system: systemPrompt,
         prompt: userPrompt,
         experimental_telemetry: {

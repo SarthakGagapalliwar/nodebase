@@ -4,6 +4,7 @@ import { HttpRequestNode } from "@/features/execution/components/http-request/no
 import { AnthropicNode } from "@/features/execution/components/anthropic/node";
 import { OpenAiNode } from "@/features/execution/components/openai/node";
 import { AutonomeNode } from "@/features/execution/components/autonome/node";
+import { NimImageNode } from "@/features/execution/components/nim-image/node";
 import { GoogleFormTrigger } from "@/features/triggers/components/googl-form-trigger/node";
 import { ManualTriggerNode } from "@/features/triggers/components/manual-trigger/node";
 import { StripeTriggerNode } from "@/features/triggers/components/stripe-trigger/node";
@@ -23,6 +24,7 @@ export const nodeComponents = {
   [NodeType.GEMINI]: GeminiNode,
   [NodeType.OPENAI]: OpenAiNode,
   [NodeType.AUTONOME]: AutonomeNode,
+  [NodeType.NIM_IMAGE]: NimImageNode,
   [NodeType.DISCORD]: DiscordNode,
   [NodeType.SLACK]: SlackNode,
   [NodeType.WHATSAPP]: WhatsAppNode,

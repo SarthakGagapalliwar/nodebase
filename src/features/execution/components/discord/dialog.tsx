@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,8 +24,10 @@ import { Textarea } from "@/components/ui/textarea";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useRef } from "react";
+import { CheckIcon, LoaderIcon } from "lucide-react";
+
+const AUTO_SAVE_DELAY = 1000;
 
 const formSchema = z.object({
   variableName: z
@@ -59,6 +60,10 @@ export const DiscordDialog = ({
   onSubmit,
   defalutValues = {},
 }: Props) => {
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isSavingRef = useRef(false);
+  const hasSavedRef = useRef(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -69,8 +74,6 @@ export const DiscordDialog = ({
     },
   });
 
-  // Reset form values when dialog opens with new defaults
-
   useEffect(() => {
     if (open) {
       form.reset({
@@ -79,29 +82,68 @@ export const DiscordDialog = ({
         content: defalutValues.content || "",
         webhookUrl: defalutValues.webhookUrl || "",
       });
+      hasSavedRef.current = false;
     }
   }, [open, defalutValues, form]);
 
   const watchVariableName = form.watch("variableName") || "myDiscord";
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit(values);
-    onOpenChange(false);
-  };
+  const handleAutoSave = useCallback(
+    async (values: z.infer<typeof formSchema>) => {
+      const isValid = await form.trigger();
+      if (!isValid) return;
+
+      isSavingRef.current = true;
+      hasSavedRef.current = false;
+
+      setTimeout(() => {
+        onSubmit(values);
+        isSavingRef.current = false;
+        hasSavedRef.current = true;
+      }, 100);
+    },
+    [form, onSubmit]
+  );
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleAutoSave(value as z.infer<typeof formSchema>);
+      }, AUTO_SAVE_DELAY);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [form, handleAutoSave]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Discord Configuration</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Discord Configuration
+            {isSavingRef.current && (
+              <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
+            )}
+            {hasSavedRef.current && !isSavingRef.current && (
+              <CheckIcon className="size-4 text-green-500" />
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Configure the Discord webhook setting for this node.
+            Configure the Discord webhook setting for this node. Changes are
+            saved automatically.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-8 mt-4"
-          >
+          <form className="space-y-8 mt-4">
             <FormField
               control={form.control}
               name="variableName"
@@ -120,26 +162,26 @@ export const DiscordDialog = ({
               )}
             />
 
-              <FormField
-                control={form.control}
-                name="webhookUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Webhook URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://discord.com/api/webhooks/..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Get this from Discord: Channel Settings → Integrations →
-                      Webhooks
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="webhookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Webhook URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://discord.com/api/webhooks/..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Get this from Discord: Channel Settings → Integrations →
+                    Webhooks
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -178,10 +220,6 @@ export const DiscordDialog = ({
                 </FormItem>
               )}
             />
-
-            <DialogFooter className="mt-4">
-              <Button type="submit">Save</Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

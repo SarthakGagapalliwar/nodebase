@@ -12,6 +12,7 @@ import { geminiChannel } from "./channels/gemini";
 import { openAiChannel } from "./channels/openai";
 import { anthropicChannel } from "./channels/anthropic";
 import { autonomeChannel } from "./channels/autonome";
+import { nimImageChannel } from "./channels/nim-image";
 import { whatsappChannel } from "./channels/whatsapp";
 import { discordChannel } from "./channels/discord";
 import { slackChannel } from "./channels/slack";
@@ -42,6 +43,7 @@ export const executeWorkflow = inngest.createFunction(
       anthropicChannel(),
       openAiChannel(),
       autonomeChannel(),
+      nimImageChannel(),
       whatsappChannel(),
       discordChannel(),
       slackChannel(),

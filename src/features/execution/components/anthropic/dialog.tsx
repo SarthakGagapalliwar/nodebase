@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,7 +18,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -33,11 +31,13 @@ import {
   useFreeTrial,
 } from "@/features/credentials/hooks/use-credentials";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { ANTHROPIC_MODELS, FREE_CREDENTIAL_ID } from "@/config/ai-models";
-import { GiftIcon } from "lucide-react";
+import { GiftIcon, CheckIcon, LoaderIcon } from "lucide-react";
+
+const AUTO_SAVE_DELAY = 1000;
 
 const formSchema = z.object({
   variableName: z
@@ -72,6 +72,10 @@ export const AnthropicDialog = ({
     useCreateCredentialType(CredentialType.ANTHROPIC);
   const { data: trialData, isLoading: isLoadingTrial } = useFreeTrial();
 
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isSavingRef = useRef(false);
+  const hasSavedRef = useRef(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -92,6 +96,7 @@ export const AnthropicDialog = ({
         systemPrompt: defalutValues.systemPrompt || "",
         userPrompt: defalutValues.userPrompt || "",
       });
+      hasSavedRef.current = false;
     }
   }, [open, defalutValues, form]);
 
@@ -99,25 +104,62 @@ export const AnthropicDialog = ({
   const watchCredentialId = form.watch("credentialId");
   const isFreeTier = watchCredentialId === FREE_CREDENTIAL_ID;
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit(values);
-    onOpenChange(false);
-  };
+  const handleAutoSave = useCallback(
+    async (values: z.infer<typeof formSchema>) => {
+      const isValid = await form.trigger();
+      if (!isValid) return;
+
+      isSavingRef.current = true;
+      hasSavedRef.current = false;
+
+      setTimeout(() => {
+        onSubmit(values);
+        isSavingRef.current = false;
+        hasSavedRef.current = true;
+      }, 100);
+    },
+    [form, onSubmit]
+  );
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleAutoSave(value as z.infer<typeof formSchema>);
+      }, AUTO_SAVE_DELAY);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [form, handleAutoSave]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Anthropic Configuration</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Anthropic Configuration
+            {isSavingRef.current && (
+              <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
+            )}
+            {hasSavedRef.current && !isSavingRef.current && (
+              <CheckIcon className="size-4 text-green-500" />
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Configure the Claude model and prompts for this node.
+            Configure the Claude model and prompts for this node. Changes are
+            saved automatically.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="mt-4 space-y-8"
-          >
+          <form className="mt-4 space-y-8">
             <FormField
               control={form.control}
               name="variableName"
@@ -256,9 +298,6 @@ export const AnthropicDialog = ({
                 </FormItem>
               )}
             />
-            <DialogFooter className="mt-4">
-              <Button type="submit">Save</Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

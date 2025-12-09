@@ -78,6 +78,12 @@ const executionNodes: NodeTypeOption[] = [
     icon: "/logos/openai.svg",
   },
   {
+    type: NodeType.NIM_IMAGE,
+    label: "NIM Image (Free)",
+    description: "Generate images using FLUX model",
+    icon: "/logos/nim.svg",
+  },
+  {
     type: NodeType.DISCORD,
     label: "Discord",
     description: "Send a message to Discord",
