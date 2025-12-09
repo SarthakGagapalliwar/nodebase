@@ -62,7 +62,7 @@ export const nimImageExecutor: NodeExecutor<NimImageData> = async ({
         status: "error",
       })
     );
-    throw new NonRetriableError("NIM Image node: missing NIM_API_KEY");
+    throw new NonRetriableError("NIM Image node: missing NIM_IMAGE_API_KEY");
   }
 
   // Process prompt with Handlebars template
