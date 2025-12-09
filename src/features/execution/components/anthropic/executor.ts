@@ -102,12 +102,12 @@ export const anthropicExecutor: NodeExecutor<AnthropicData> = async ({
         },
       });
 
-      model = nim.chatModel('moonshotai/kimi-k2-instruct-0905');
+      model = nim.chatModel("moonshotai/kimi-k2-instruct-0905");
     } else {
       // Fetch user's credential and use Anthropic
       const credential = await step.run("get-credential", () => {
         return prisma.credential.findUniqueOrThrow({
-          where: { id: data.credentialId, userId},
+          where: { id: data.credentialId, userId },
         });
       });
 
@@ -122,18 +122,23 @@ export const anthropicExecutor: NodeExecutor<AnthropicData> = async ({
       model = anthropic(data.model || "claude-3-5-sonnet-latest");
     }
 
-    const result = await step.ai.wrap("anthropic-generate-text", generateText, {
-      model,
-      system: systemPrompt,
-      prompt: userPrompt,
-      experimental_telemetry: {
-        isEnabled: true,
-        recordInputs: true,
-        recordOutputs: true,
-      },
-    });
+    const { steps } = await step.ai.wrap(
+      "anthropic-generate-text",
+      generateText,
+      {
+        model,
+        system: systemPrompt,
+        prompt: userPrompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
+      }
+    );
 
-    const text = result.text ?? "";
+    const text =
+      steps[0]?.content[0]?.type === "text" ? steps[0].content[0].text : "";
 
     await publish(
       anthropicChannel().status({

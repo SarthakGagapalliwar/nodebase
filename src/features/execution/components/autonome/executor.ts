@@ -83,18 +83,23 @@ export const autonomeExecutor: NodeExecutor<AutonomeData> = async ({
   });
 
   try {
-    const result = await step.ai.wrap("autonome-generate-text", generateText, {
-      model: openrouter.chat("kwaipilot/kat-coder-pro:free"),
-      system: systemPrompt,
-      prompt: userPrompt,
-      experimental_telemetry: {
-        isEnabled: true,
-        recordInputs: true,
-        recordOutputs: true,
-      },
-    });
+    const { steps } = await step.ai.wrap(
+      "autonome-generate-text",
+      generateText,
+      {
+        model: openrouter.chat("kwaipilot/kat-coder-pro:free"),
+        system: systemPrompt,
+        prompt: userPrompt,
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
+      }
+    );
 
-    const text = result.text ?? "";
+    const text =
+      steps[0]?.content[0]?.type === "text" ? steps[0].content[0].text : "";
 
     await publish(
       autonomeChannel().status({

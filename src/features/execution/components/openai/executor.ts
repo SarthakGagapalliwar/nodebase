@@ -102,7 +102,7 @@ export const OpenAiExecutor: NodeExecutor<OpenAiData> = async ({
         },
       });
 
-      model = nim.chatModel('deepseek-ai/deepseek-v3.1-terminus');
+      model = nim.chatModel("deepseek-ai/deepseek-v3.1-terminus");
     } else {
       // Fetch user's credential and use OpenAI
       const credential = await step.run("get-credential", () => {
@@ -122,7 +122,7 @@ export const OpenAiExecutor: NodeExecutor<OpenAiData> = async ({
       model = openai(data.model || "gpt-4o");
     }
 
-    const result = await step.ai.wrap("openai-generate-text", generateText, {
+    const { steps } = await step.ai.wrap("openai-generate-text", generateText, {
       model,
       system: systemPrompt,
       prompt: userPrompt,
@@ -133,7 +133,8 @@ export const OpenAiExecutor: NodeExecutor<OpenAiData> = async ({
       },
     });
 
-    const text = result.text ?? "";
+    const text =
+      steps[0]?.content[0]?.type === "text" ? steps[0].content[0].text : "";
 
     await publish(
       openAiChannel().status({

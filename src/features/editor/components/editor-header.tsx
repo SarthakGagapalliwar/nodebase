@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { SaveIcon } from "lucide-react";
+import { CheckIcon, LoaderIcon, SaveIcon } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,35 +17,98 @@ import {
   useUpdateWorkflow,
   useUpdateWorkflowName,
 } from "@/features/workflows/hooks/use-workflows";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
 import { editorAtom } from "../store/atoms";
 
+const AUTO_SAVE_INTERVAL = 3000; // Check every 3 seconds
+
 export const EditorSaveButton = ({ workflowId }: { workflowId: string }) => {
   const editor = useAtomValue(editorAtom);
-  const saveWorkflow =  useUpdateWorkflow();
+  const saveWorkflow = useUpdateWorkflow();
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const lastSnapshotRef = useRef<string | null>(null);
 
-  const handleSave = () =>{
-    if(!editor) {
+  const handleSave = useCallback(() => {
+    if (!editor) {
       return;
     }
 
     const nodes = editor.getNodes();
     const edges = editor.getEdges();
 
-    saveWorkflow.mutate({
-      id:workflowId,
-      nodes,
-      edges,
-    })
+    saveWorkflow.mutate(
+      {
+        id: workflowId,
+        nodes,
+        edges,
+      },
+      {
+        onSuccess: () => {
+          setLastSavedAt(new Date());
+          // Update snapshot after successful save
+          lastSnapshotRef.current = JSON.stringify({ nodes, edges });
+        },
+      }
+    );
+  }, [editor, workflowId, saveWorkflow]);
 
-  }
+  // Auto-save by polling for changes
+  useEffect(() => {
+    if (!editor) return;
+
+    // Initialize snapshot on first load
+    const nodes = editor.getNodes();
+    const edges = editor.getEdges();
+    lastSnapshotRef.current = JSON.stringify({ nodes, edges });
+
+    const intervalId = setInterval(() => {
+      if (saveWorkflow.isPending) return;
+
+      const currentNodes = editor.getNodes();
+      const currentEdges = editor.getEdges();
+      const currentSnapshot = JSON.stringify({
+        nodes: currentNodes,
+        edges: currentEdges,
+      });
+
+      // Only save if there are changes
+      if (
+        lastSnapshotRef.current &&
+        currentSnapshot !== lastSnapshotRef.current
+      ) {
+        handleSave();
+      }
+    }, AUTO_SAVE_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [editor, handleSave, saveWorkflow.isPending]);
+
+  const renderIcon = () => {
+    if (saveWorkflow.isPending) {
+      return <LoaderIcon className="size-4 animate-spin" />;
+    }
+    if (lastSavedAt) {
+      return <CheckIcon className="size-4" />;
+    }
+    return <SaveIcon className="size-4" />;
+  };
+
+  const renderText = () => {
+    if (saveWorkflow.isPending) {
+      return "Saving...";
+    }
+    if (lastSavedAt) {
+      return "Saved";
+    }
+    return "Save";
+  };
 
   return (
     <div className="ml-auto">
       <Button size="sm" onClick={handleSave} disabled={saveWorkflow.isPending}>
-        <SaveIcon className="size-4" />
-        Save
+        {renderIcon()}
+        {renderText()}
       </Button>
     </div>
   );
