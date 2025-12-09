@@ -1,9 +1,15 @@
 "use server";
 
+import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { inngest } from "@/inngest/client";
-import { NIM_IMAGE_CHANNEL_NAME } from "@/inngest/channels/nim-image";
+import { nimImageChannel } from "@/inngest/channels/nim-image";
 
-export const nimImageRealtimeToken = async () => {
-  const token = await inngest.realtimeToken([NIM_IMAGE_CHANNEL_NAME]);
+export type NimImageToken = Realtime.Token<typeof nimImageChannel, ["status"]>;
+
+export async function nimImageRealtimeToken(): Promise<NimImageToken> {
+  const token = await getSubscriptionToken(inngest, {
+    channel: nimImageChannel(),
+    topics: ["status"],
+  });
   return token;
-};
+}
