@@ -3,16 +3,20 @@
 import { Node, NodeProps, useReactFlow } from "@xyflow/react";
 import { memo, useState } from "react";
 import { BaseExecutionNode } from "../base-execution-node";
-import { NimImageDialog } from "./dialog";
+import { NimImageDialog, type NimImageFormValues } from "./dialog";
 import { UseNodeStatus } from "../../hooks/use-node-status";
 import { NIM_IMAGE_CHANNEL_NAME } from "@/inngest/channels/nim-image";
 import { nimImageRealtimeToken } from "./action";
+import type { FluxModelId } from "@/config/ai-models";
 
 type NimImageNodeData = {
   variableName?: string;
+  model?: FluxModelId;
   prompt?: string;
   width?: number;
   height?: number;
+  aspectRatio?: string;
+  inputImage?: string;
   cfgScale?: number;
   steps?: number;
   seed?: number;
@@ -25,15 +29,7 @@ export const NimImageNode = memo((props: NodeProps<NimImageNodeType>) => {
 
   const { setNodes } = useReactFlow();
 
-  const handleSubmit = (values: {
-    variableName: string;
-    prompt: string;
-    width: number;
-    height: number;
-    cfgScale?: number;
-    steps?: number;
-    seed?: number;
-  }) => {
+  const handleSubmit = (values: NimImageFormValues) => {
     setNodes((nodes) =>
       nodes.map((node) => {
         if (node.id === props.id) {
