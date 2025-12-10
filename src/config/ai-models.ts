@@ -18,5 +18,41 @@ export const OPENAI_MODELS = [
   { id: "o3-pro-2025-06-10", name: "GPT o3 Pro" },
 ] as const;
 
+// FLUX Image Generation Models
+export const FLUX_MODELS = [
+  {
+    id: "flux-schnell",
+    name: "FLUX.1-schnell",
+    description: "Fast generation, 4 steps",
+    url: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell",
+    envKey: "FLUX_SCHNELL_API",
+    defaultSteps: 4,
+    supportsCfgScale: false,
+    supportsInputImage: false,
+  },
+  {
+    id: "flux-dev",
+    name: "FLUX.1-dev",
+    description: "High quality, 50 steps",
+    url: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev",
+    envKey: "FLUX_DEV_API",
+    defaultSteps: 50,
+    supportsCfgScale: true,
+    supportsInputImage: false,
+  },
+  {
+    id: "flux-kontext",
+    name: "FLUX.1-Kontext-dev",
+    description: "Image editing with context",
+    url: "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-kontext-dev",
+    envKey: "FLUX_KONTEXT_API",
+    defaultSteps: 30,
+    supportsCfgScale: true,
+    supportsInputImage: true,
+  },
+] as const;
+
+export type FluxModelId = (typeof FLUX_MODELS)[number]["id"];
+
 // Special credential ID for free tier
 export const FREE_CREDENTIAL_ID = "__FREE_TRIAL__";

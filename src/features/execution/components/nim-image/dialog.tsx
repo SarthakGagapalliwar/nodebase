@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FLUX_MODELS, type FluxModelId } from "@/config/ai-models";
 
 const AUTO_SAVE_DELAY = 1000;
 
@@ -41,6 +42,15 @@ const IMAGE_SIZES = [
   { width: 768, height: 1024, label: "768x1024 (Portrait)" },
 ];
 
+const ASPECT_RATIOS = [
+  { value: "1:1", label: "1:1 (Square)" },
+  { value: "16:9", label: "16:9 (Landscape)" },
+  { value: "9:16", label: "9:16 (Portrait)" },
+  { value: "4:3", label: "4:3" },
+  { value: "3:4", label: "3:4" },
+  { value: "match_input_image", label: "Match Input Image" },
+];
+
 // Use strings for all fields since HTML inputs return strings
 const formSchema = z.object({
   variableName: z
@@ -50,8 +60,11 @@ const formSchema = z.object({
       message:
         "Variable name must start with a letter or underscore and contain only letters, numbers, and underscores",
     }),
+  model: z.string().min(1, "Model is required"),
   prompt: z.string().min(1, "Prompt is required"),
-  size: z.string().min(1, "Size is required"),
+  size: z.string().optional(),
+  aspectRatio: z.string().optional(),
+  inputImage: z.string().optional(),
   cfgScale: z.string().optional(),
   steps: z.string().optional(),
   seed: z.string().optional(),
@@ -61,9 +74,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 export type NimImageFormValues = {
   variableName: string;
+  model: FluxModelId;
   prompt: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
+  aspectRatio?: string;
+  inputImage?: string;
   cfgScale?: number;
   steps?: number;
   seed?: number;
@@ -91,17 +107,26 @@ export const NimImageDialog = ({
       ? `${defalutValues.width}x${defalutValues.height}`
       : "1024x1024";
 
+  const defaultModel = defalutValues.model || "flux-dev";
+  const selectedModelConfig = FLUX_MODELS.find((m) => m.id === defaultModel);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       variableName: defalutValues.variableName || "",
+      model: defaultModel,
       prompt: defalutValues.prompt || "",
       size: defaultSize,
+      aspectRatio: defalutValues.aspectRatio || "match_input_image",
+      inputImage: defalutValues.inputImage || "",
       cfgScale: defalutValues.cfgScale?.toString() ?? "3.5",
-      steps: defalutValues.steps?.toString() ?? "50",
+      steps: defalutValues.steps?.toString() ?? selectedModelConfig?.defaultSteps.toString() ?? "50",
       seed: defalutValues.seed?.toString() ?? "0",
     },
   });
+
+  const watchModel = form.watch("model");
+  const currentModelConfig = FLUX_MODELS.find((m) => m.id === watchModel);
 
   useEffect(() => {
     if (open) {
@@ -109,12 +134,16 @@ export const NimImageDialog = ({
         defalutValues.width && defalutValues.height
           ? `${defalutValues.width}x${defalutValues.height}`
           : "1024x1024";
+      const modelConfig = FLUX_MODELS.find((m) => m.id === (defalutValues.model || "flux-dev"));
       form.reset({
         variableName: defalutValues.variableName || "",
+        model: defalutValues.model || "flux-dev",
         prompt: defalutValues.prompt || "",
         size,
+        aspectRatio: defalutValues.aspectRatio || "match_input_image",
+        inputImage: defalutValues.inputImage || "",
         cfgScale: defalutValues.cfgScale?.toString() ?? "3.5",
-        steps: defalutValues.steps?.toString() ?? "50",
+        steps: defalutValues.steps?.toString() ?? modelConfig?.defaultSteps.toString() ?? "50",
         seed: defalutValues.seed?.toString() ?? "0",
       });
       hasSavedRef.current = false;
@@ -132,13 +161,25 @@ export const NimImageDialog = ({
       hasSavedRef.current = false;
 
       setTimeout(() => {
-        const [width, height] = values.size.split("x").map(Number);
+        const modelConfig = FLUX_MODELS.find((m) => m.id === values.model);
+        const isKontext = modelConfig?.supportsInputImage;
+
+        // For Kontext, use aspectRatio; for others, use size
+        let width: number | undefined;
+        let height: number | undefined;
+        if (!isKontext && values.size) {
+          [width, height] = values.size.split("x").map(Number);
+        }
+
         onSubmit({
           variableName: values.variableName,
+          model: values.model as FluxModelId,
           prompt: values.prompt,
           width,
           height,
-          cfgScale: values.cfgScale ? parseFloat(values.cfgScale) : undefined,
+          aspectRatio: isKontext ? values.aspectRatio : undefined,
+          inputImage: isKontext ? values.inputImage : undefined,
+          cfgScale: modelConfig?.supportsCfgScale && values.cfgScale ? parseFloat(values.cfgScale) : undefined,
           steps: values.steps ? parseInt(values.steps, 10) : undefined,
           seed: values.seed ? parseInt(values.seed, 10) : undefined,
         });
@@ -187,7 +228,7 @@ export const NimImageDialog = ({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form className="mt-4 space-y-8">
+          <form className="mt-4 space-y-6">
             <FormField
               control={form.control}
               name="variableName"
@@ -209,56 +250,149 @@ export const NimImageDialog = ({
 
             <FormField
               control={form.control}
-              name="prompt"
+              name="model"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prompt</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="A beautiful sunset over mountains, photorealistic"
-                      className="min-h-[100px] font-mono text-sm"
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormLabel>Model</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select model" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {FLUX_MODELS.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex flex-col">
+                            <span>{model.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {model.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
-                    Describe the image you want to generate. Use{" "}
-                    {"{{variables}}"} to include dynamic content, e.g.,{" "}
-                    {"{{myGemini.text}}"}
+                    Choose the FLUX model variant for image generation
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="prompt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Prompt</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={
+                        currentModelConfig?.supportsInputImage
+                          ? "Describe what changes to make to the image, e.g., 'Now the person is wearing a hat'"
+                          : "A beautiful sunset over mountains, photorealistic"
+                      }
+                      className="min-h-[100px] font-mono text-sm"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {currentModelConfig?.supportsInputImage
+                      ? "Describe the changes you want to make to the input image"
+                      : "Describe the image you want to generate. Use {{variables}} for dynamic content"}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Kontext-specific: Input Image */}
+            {currentModelConfig?.supportsInputImage && (
               <FormField
                 control={form.control}
-                name="size"
+                name="inputImage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image Size</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select size" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {IMAGE_SIZES.map((size) => (
-                          <SelectItem
-                            key={size.label}
-                            value={`${size.width}x${size.height}`}
-                          >
-                            {size.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>Output image dimensions</FormDescription>
+                    <FormLabel>Input Image</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="{{myOtherImage.imageBase64}} or base64 string"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Reference an image from another node using{" "}
+                      {"{{variableName.imageBase64}}"} or provide a base64 string
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Size selector for non-Kontext models */}
+              {!currentModelConfig?.supportsInputImage && (
+                <FormField
+                  control={form.control}
+                  name="size"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image Size</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select size" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {IMAGE_SIZES.map((size) => (
+                            <SelectItem
+                              key={size.label}
+                              value={`${size.width}x${size.height}`}
+                            >
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Output image dimensions</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Aspect ratio for Kontext model */}
+              {currentModelConfig?.supportsInputImage && (
+                <FormField
+                  control={form.control}
+                  name="aspectRatio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Aspect Ratio</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select aspect ratio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ASPECT_RATIOS.map((ratio) => (
+                            <SelectItem key={ratio.value} value={ratio.value}>
+                              {ratio.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>Output aspect ratio</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -271,12 +405,12 @@ export const NimImageDialog = ({
                         type="number"
                         min={1}
                         max={100}
-                        placeholder="50"
+                        placeholder={currentModelConfig?.defaultSteps.toString() ?? "50"}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Number of inference steps (1-100)
+                      Inference steps ({currentModelConfig?.id === "flux-schnell" ? "1-4 recommended" : "1-100"})
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -285,29 +419,32 @@ export const NimImageDialog = ({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="cfgScale"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CFG Scale</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={20}
-                        step={0.5}
-                        placeholder="3.5"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      How closely to follow the prompt (1-20)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* CFG Scale only for models that support it */}
+              {currentModelConfig?.supportsCfgScale && (
+                <FormField
+                  control={form.control}
+                  name="cfgScale"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CFG Scale</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          step={0.5}
+                          placeholder="3.5"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        How closely to follow the prompt (1-20)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
