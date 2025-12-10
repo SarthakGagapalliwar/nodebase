@@ -29,7 +29,8 @@ export const UpgradeModel = ({ open, onOpenChange }: UpgradeModelProps) => {
           <AlertDialogTitle>Upgrade to Pro</AlertDialogTitle>
           <AlertDialogDescription>
             You need an active subscription to perform this action. Upgrade to
-            Pro to unlock all features.
+            Pro to unlock all features. <strong>First month is free</strong>
+            —use test card 4242 4242 4242 4242 with CVC 555 to try it safely.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
