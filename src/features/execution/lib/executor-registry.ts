@@ -12,6 +12,9 @@ import { nimImageExecutor } from "@/features/execution/components/nim-image/exec
 import { discordExecutor } from "../components/discord/executor";
 import { slackExecutor } from "../components/slack/executor";
 import { whatsappExecutor } from "../components/whatsapp/executor";
+import { googleSheetsExecutor } from "../components/google-sheets/executor";
+import { emailExecutor } from "../components/email/executor";
+import { dataFilterExecutor } from "../components/data-filter/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
   [NodeType.INITIAL]: manualTriggerExecutor,
@@ -28,6 +31,9 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
   [NodeType.DISCORD]: discordExecutor,
   [NodeType.SLACK]: slackExecutor,
   [NodeType.WHATSAPP]: whatsappExecutor,
+  [NodeType.GOOGLE_SHEETS]: googleSheetsExecutor,
+  [NodeType.EMAIL]: emailExecutor,
+  [NodeType.DATA_FILTER]: dataFilterExecutor,
 };
 
 export const getExector = (type: NodeType): NodeExecutor => {

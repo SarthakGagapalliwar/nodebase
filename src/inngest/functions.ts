@@ -16,6 +16,9 @@ import { nimImageChannel } from "./channels/nim-image";
 import { whatsappChannel } from "./channels/whatsapp";
 import { discordChannel } from "./channels/discord";
 import { slackChannel } from "./channels/slack";
+import { googleSheetsChannel } from "./channels/google-sheets";
+import { emailChannel } from "./channels/email";
+import { dataFilterChannel } from "./channels/data-filter";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -47,6 +50,9 @@ export const executeWorkflow = inngest.createFunction(
       whatsappChannel(),
       discordChannel(),
       slackChannel(),
+      googleSheetsChannel(),
+      emailChannel(),
+      dataFilterChannel(),
     ],
   },
   async ({ event, step, publish }) => {
