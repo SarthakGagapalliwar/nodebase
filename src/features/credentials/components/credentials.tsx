@@ -115,10 +115,12 @@ export const CredentialsEmpty = () => {
 };
 
 const credentialLogos: Record<CredentialType, string> = {
-    [CredentialType.OPENAI]: "/logos/openai.svg",
-    [CredentialType.ANTHROPIC]: "/logos/anthropic.svg",
-    [CredentialType.GEMINI]: "/logos/gemini.svg"
-}
+  [CredentialType.OPENAI]: "/logos/openai.svg",
+  [CredentialType.ANTHROPIC]: "/logos/anthropic.svg",
+  [CredentialType.GEMINI]: "/logos/gemini.svg",
+  [CredentialType.GOOGLE_SHEETS]: "/logos/google-sheets.svg",
+  [CredentialType.RESEND]: "/logos/resend.svg",
+};
 
 export const CredentialItem = ({ data }: { data: Credential }) => {
   const removeCredential = useRemoveCredential();
@@ -142,7 +144,7 @@ export const CredentialItem = ({ data }: { data: Credential }) => {
       }
       image={
         <div className="size-8 flex items-center justify-center">
-          <Image src={logo} alt={data.type} width={20} height={20}/>
+          <Image src={logo} alt={data.type} width={20} height={20} />
         </div>
       }
       onRemove={handleRemove}
