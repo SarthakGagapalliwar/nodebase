@@ -13,6 +13,9 @@ import type { NodeTypes } from "@xyflow/react";
 import { DiscordNode } from "@/features/execution/components/discord/node";
 import { SlackNode } from "@/features/execution/components/slack/node";
 import { WhatsAppNode } from "@/features/execution/components/whatsapp/node";
+import { GoogleSheetsNode } from "@/features/execution/components/google-sheets/node";
+import { EmailNode } from "@/features/execution/components/email/node";
+import { DataFilterNode } from "@/features/execution/components/data-filter/node";
 
 export const nodeComponents = {
   [NodeType.INITIAL]: InitialNode,
@@ -28,6 +31,9 @@ export const nodeComponents = {
   [NodeType.DISCORD]: DiscordNode,
   [NodeType.SLACK]: SlackNode,
   [NodeType.WHATSAPP]: WhatsAppNode,
+  [NodeType.GOOGLE_SHEETS]: GoogleSheetsNode,
+  [NodeType.EMAIL]: EmailNode,
+  [NodeType.DATA_FILTER]: DataFilterNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredNodeType = keyof typeof nodeComponents;

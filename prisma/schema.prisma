@@ -85,6 +85,8 @@ enum CredentialType {
   OPENAI
   ANTHROPIC
   GEMINI
+  GOOGLE_SHEETS
+  RESEND
 }
 
 model Workflow {
@@ -116,6 +118,9 @@ enum NodeType {
   DISCORD
   SLACK
   WHATSAPP
+  GOOGLE_SHEETS
+  EMAIL
+  DATA_FILTER
 }
 
 model Node {

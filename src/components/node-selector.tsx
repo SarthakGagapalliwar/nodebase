@@ -3,7 +3,13 @@
 import { createId } from "@paralleldrive/cuid2";
 import { useReactFlow } from "@xyflow/react";
 
-import { GlobeIcon, MousePointerIcon } from "lucide-react";
+import {
+  GlobeIcon,
+  MousePointerIcon,
+  FilterIcon,
+  MailIcon,
+  TableIcon,
+} from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import {
@@ -100,6 +106,24 @@ const executionNodes: NodeTypeOption[] = [
     label: "WhatsApp",
     description: "Send a WhatsApp message",
     icon: "/logos/whatsapp.svg",
+  },
+  {
+    type: NodeType.GOOGLE_SHEETS,
+    label: "Google Sheets",
+    description: "Read/write data from Google Sheets",
+    icon: "/logos/google-sheets.svg",
+  },
+  {
+    type: NodeType.EMAIL,
+    label: "Email (Resend)",
+    description: "Send emails via Resend",
+    icon: "/logos/resend.svg",
+  },
+  {
+    type: NodeType.DATA_FILTER,
+    label: "Data Filter",
+    description: "Filter data (top %, conditions)",
+    icon: FilterIcon,
   },
 ];
 
